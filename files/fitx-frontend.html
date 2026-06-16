@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitX</title>
+<style>
+  /* ── Reset & Base ─────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:      #4CAF50;
+    --green-dark: #388E3C;
+    --green-soft: #E8F5E9;
+    --green-glow: rgba(76,175,80,0.18);
+    --bg:         #f5f7f5;
+    --card:       #ffffff;
+    --text:       #1a1a1a;
+    --muted:      #6b7c6b;
+    --border:     #e0e8e0;
+    --red:        #ef5350;
+    --orange:     #FF9800;
+    --radius:     12px;
+    --shadow:     0 2px 16px rgba(0,0,0,0.07);
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Screen routing ───────────────────────────── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ── Auth screens ─────────────────────────────── */
+  .auth-wrap {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; background: var(--bg); padding: 20px;
+  }
+  .auth-card {
+    background: var(--card); border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+    padding: 40px 36px; width: 100%; max-width: 420px;
+  }
+  .auth-logo { font-size: 52px; font-weight: 900; color: var(--green); text-align: center; letter-spacing: -2px; }
+  .auth-sub  { text-align: center; color: var(--muted); margin-bottom: 28px; font-size: 15px; }
+  .auth-card h2 { text-align: center; font-size: 20px; margin-bottom: 20px; }
+
+  .input-group { margin-bottom: 14px; }
+  .input-group label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 5px; }
+  .input-group input {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 15px; outline: none; transition: border-color .2s;
+    background: #fafffe;
+  }
+  .input-group input:focus { border-color: var(--green); }
+
+  .btn {
+    width: 100%; padding: 13px; background: var(--green); color: #fff;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: background .2s, transform .1s;
+  }
+  .btn:hover  { background: var(--green-dark); }
+  .btn:active { transform: scale(.98); }
+  .btn.danger { background: var(--red); }
+  .btn.outline {
+    background: transparent; color: var(--green);
+    border: 2px solid var(--green); margin-top: 10px;
+  }
+
+  .auth-switch { text-align: center; margin-top: 18px; font-size: 14px; color: var(--muted); }
+  .auth-switch a { color: var(--green); text-decoration: none; font-weight: 600; cursor: pointer; }
+
+  .error-msg {
+    background: #fdecea; border: 1px solid #f5c6cb; color: var(--red);
+    border-radius: 8px; padding: 10px 14px; font-size: 14px; margin-bottom: 14px;
+    display: none;
+  }
+
+  /* ── App shell ────────────────────────────────── */
+  .app-header {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    padding: 0 20px; height: 58px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+  .app-logo { font-size: 26px; font-weight: 900; color: var(--green); letter-spacing: -1px; cursor: pointer; }
+  .app-username { font-size: 14px; color: var(--muted); }
+  .logout-btn {
+    background: none; border: none; color: var(--muted);
+    font-size: 13px; cursor: pointer; padding: 6px 12px;
+    border-radius: 8px; transition: background .2s;
+  }
+  .logout-btn:hover { background: var(--green-soft); color: var(--green); }
+
+  .app-content { flex: 1; padding: 20px; max-width: 700px; width: 100%; margin: 0 auto; }
+
+  .bottom-nav {
+    background: var(--card); border-top: 1px solid var(--border);
+    display: flex; position: sticky; bottom: 0;
+  }
+  .nav-btn {
+    flex: 1; padding: 12px 0 10px; background: none; border: none;
+    cursor: pointer; font-size: 11px; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    transition: color .2s;
+  }
+  .nav-btn .icon { font-size: 20px; }
+  .nav-btn.active { color: var(--green); }
+  .nav-btn:hover  { color: var(--green); }
+
+  /* ── Cards ────────────────────────────────────── */
+  .card {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 17px; font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title span { font-size: 20px; }
+
+  /* ── Home page ────────────────────────────────── */
+  .welcome-banner {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
+    border-radius: var(--radius); padding: 24px; color: white;
+    margin-bottom: 16px;
+  }
+  .welcome-banner h2 { font-size: 22px; font-weight: 800; }
+  .welcome-banner p  { opacity: .85; font-size: 14px; margin-top: 4px; }
+
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .stat-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px; text-align: center; box-shadow: var(--shadow);
+  }
+  .stat-card .num { font-size: 28px; font-weight: 800; color: var(--green); }
+  .stat-card .lbl { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .qa-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 20px; text-align: center; cursor: pointer;
+    box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s;
+    border: 2px solid transparent;
+  }
+  .qa-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(76,175,80,0.15); border-color: var(--green); }
+  .qa-card .qa-icon { font-size: 32px; margin-bottom: 8px; }
+  .qa-card .qa-label { font-size: 14px; font-weight: 600; }
+  .qa-card .qa-sub   { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* ── Workout page ─────────────────────────────── */
+  .day-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; }
+  .day-tab {
+    padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+    background: var(--card); cursor: pointer; font-size: 13px; font-weight: 600;
+    white-space: nowrap; transition: all .2s; color: var(--muted);
+  }
+  .day-tab.active { background: var(--green); color: white; border-color: var(--green); }
+
+  .exercise-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px; border: 1.5px solid var(--border); border-radius: 10px;
+    margin-bottom: 10px; transition: border-color .2s;
+  }
+  .exercise-item.done-item { opacity: .55; }
+  .exercise-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--green); flex-shrink: 0; }
+  .ex-info { flex: 1; }
+  .ex-name { font-weight: 600; font-size: 15px; }
+  .ex-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ex-del  { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; padding: 4px; }
+  .ex-del:hover { color: var(--red); }
+
+  .add-form {
+    background: var(--green-soft); border-radius: 10px; padding: 16px; margin-top: 12px;
+    display: none;
+  }
+  .add-form.open { display: block; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-input {
+    padding: 10px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: 14px; width: 100%; outline: none; background: white;
+  }
+  .form-input:focus { border-color: var(--green); }
+  .btn-sm {
+    padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: 600; transition: background .2s;
+  }
+  .btn-sm.green { background: var(--green); color: white; }
+  .btn-sm.green:hover { background: var(--green-dark); }
+  .btn-sm.grey  { background: var(--border); color: var(--text); }
+
+  .progress-bar-wrap { background: var(--border); border-radius: 99px; height: 8px; margin-bottom: 14px; }
+  .progress-bar-fill { background: var(--green); height: 8px; border-radius: 99px; transition: width .4s; }
+
+  /* ── Nutrition page ───────────────────────────── */
+  .calorie-ring-wrap { display: flex; align-items: center; gap: 24px; margin-bottom: 16px; }
+  .calorie-ring { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+  .calorie-ring svg { transform: rotate(-90deg); }
+  .calorie-ring-text {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .calorie-ring-text .cal-num  { font-size: 20px; font-weight: 800; color: var(--green); }
+  .calorie-ring-text .cal-goal { font-size: 11px; color: var(--muted); }
+
+  .macro-bars { flex: 1; }
+  .macro-row  { margin-bottom: 10px; }
+  .macro-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .macro-bar { background: var(--border); border-radius: 99px; height: 7px; }
+  .macro-fill { height: 7px; border-radius: 99px; transition: width .4s; }
+  .macro-fill.protein { background: #4CAF50; }
+  .macro-fill.carbs   { background: #FF9800; }
+  .macro-fill.fat     { background: #F44336; }
+
+  .meal-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 10px;
+  }
+  .meal-type-badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .badge-breakfast { background: #FFF9C4; color: #F57F17; }
+  .badge-lunch     { background: #E8F5E9; color: #2E7D32; }
+  .badge-dinner    { background: #E3F2FD; color: #1565C0; }
+  .badge-snack     { background: #F3E5F5; color: #7B1FA2; }
+  .meal-info { flex: 1; }
+  .meal-name { font-weight: 600; font-size: 14px; }
+  .meal-cals { font-size: 12px; color: var(--muted); }
+
+  /* ── AI Coach page ────────────────────────────── */
+  .chat-wrap { display: flex; flex-direction: column; height: calc(100vh - 170px); }
+  .chat-messages { flex: 1; overflow-y: auto; padding-bottom: 10px; }
+  .chat-msg { max-width: 82%; margin-bottom: 14px; }
+  .chat-msg.user { margin-left: auto; }
+  .chat-bubble {
+    padding: 12px 16px; border-radius: 18px; font-size: 14px; line-height: 1.55;
+  }
+  .chat-msg.bot  .chat-bubble { background: var(--card); border: 1.5px solid var(--border); color: var(--text); border-bottom-left-radius: 4px; }
+  .chat-msg.user .chat-bubble { background: var(--green); color: white; border-bottom-right-radius: 4px; }
+  .chat-meta { font-size: 11px; color: var(--muted); margin-top: 4px; padding: 0 4px; }
+  .chat-msg.user .chat-meta { text-align: right; }
+
+  .chat-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .chat-chip {
+    padding: 7px 14px; border: 1.5px solid var(--green); border-radius: 20px;
+    background: var(--green-soft); color: var(--green-dark); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+  }
+  .chat-chip:hover { background: var(--green); color: white; }
+
+  .chat-input-row {
+    display: flex; gap: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+  }
+  .chat-input {
+    flex: 1; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: 24px;
+    font-size: 14px; outline: none; transition: border-color .2s;
+  }
+  .chat-input:focus { border-color: var(--green); }
+  .chat-send {
+    width: 44px; height: 44px; border-radius: 50%; background: var(--green);
+    border: none; cursor: pointer; font-size: 18px; color: white;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .chat-send:hover { background: var(--green-dark); }
+
+  .typing-indicator { display: flex; gap: 5px; align-items: center; padding: 12px 16px; }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+    animation: bounce 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: .2s; }
+  .typing-dot:nth-child(3) { animation-delay: .4s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+  /* ── Form Checker page ────────────────────────── */
+  .form-checker-header {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-radius: var(--radius); padding: 24px; color: white;
+    margin-bottom: 16px; text-align: center;
+  }
+  .form-checker-header h2 { font-size: 22px; font-weight: 800; }
+  .form-checker-header p  { opacity: .75; font-size: 14px; margin-top: 6px; }
+
+  .camera-container {
+    position: relative; background: #111; border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 16px;
+    aspect-ratio: 4/3; width: 100%;
+  }
+  #cameraFeed {
+    width: 100%; height: 100%; object-fit: cover;
+    transform: scaleX(-1); /* Mirror effect */
+  }
+  #poseCanvas {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    pointer-events: none; transform: scaleX(-1);
+  }
+  .camera-overlay {
+    position: absolute; inset: 0; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.7); color: white; text-align: center;
+    padding: 20px;
+  }
+  .camera-overlay .cam-icon { font-size: 48px; margin-bottom: 12px; }
+  .camera-overlay p { font-size: 14px; opacity: .8; }
+
+  .camera-controls { display: flex; gap: 10px; margin-bottom: 16px; }
+  .cam-btn {
+    flex: 1; padding: 13px; border-radius: 10px; border: none;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: all .2s;
+  }
+  .cam-btn.start { background: var(--green); color: white; }
+  .cam-btn.start:hover { background: var(--green-dark); }
+  .cam-btn.stop  { background: var(--red); color: white; }
+
+  .feedback-panel {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 16px;
+  }
+  .feedback-header {
+    padding: 14px 18px; display: flex; align-items: center;
+    gap: 10px; border-bottom: 1px solid var(--border);
+  }
+  .feedback-status {
+    width: 12px; height: 12px; border-radius: 50%; background: #ccc;
+    flex-shrink: 0;
+  }
+  .feedback-status.good    { background: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+  .feedback-status.warning { background: var(--orange); }
+  .feedback-status.bad     { background: var(--red); }
+  .feedback-status.idle    { background: #ccc; }
+
+  .feedback-title { font-weight: 700; font-size: 16px; }
+  .feedback-body  { padding: 16px 18px; font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  .detected-exercise {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--green-soft); border: 1.5px solid var(--green);
+    border-radius: 20px; padding: 6px 14px; font-size: 14px;
+    font-weight: 700; color: var(--green-dark); margin-bottom: 14px;
+  }
+
+  .correction-list { list-style: none; }
+  .correction-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .correction-item:last-child { border-bottom: none; }
+  .correction-item .ci-icon { font-size: 18px; flex-shrink: 0; }
+
+  .score-ring-wrap { display: flex; align-items: center; gap: 16px; padding: 16px 18px; }
+  .score-ring { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring-text {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .score-num { font-size: 22px; font-weight: 900; }
+  .score-lbl { font-size: 10px; color: var(--muted); }
+  .score-desc { flex: 1; }
+  .score-desc h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .score-desc p  { font-size: 13px; color: var(--muted); }
+
+  /* ── Profile page ─────────────────────────────── */
+  .profile-avatar {
+    width: 72px; height: 72px; border-radius: 50%; background: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; font-weight: 800; color: white; margin: 0 auto 12px;
+  }
+  .profile-name  { text-align: center; font-size: 20px; font-weight: 800; }
+  .profile-email { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+  .profile-stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .profile-stat { background: var(--green-soft); border-radius: 10px; padding: 14px; text-align: center; }
+  .profile-stat .ps-num { font-size: 24px; font-weight: 800; color: var(--green); }
+  .profile-stat .ps-lbl { font-size: 12px; color: var(--muted); }
+
+  /* ── Toast ────────────────────────────────────── */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1a1a1a; color: white; padding: 10px 20px; border-radius: 24px;
+    font-size: 14px; opacity: 0; pointer-events: none;
+    transition: opacity .3s, transform .3s; z-index: 9999;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Loader ───────────────────────────────────── */
+  .loader { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Login
+════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Your smart fitness companion</div>
+      <h2>Welcome back</h2>
+      <div class="error-msg" id="login-error"></div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@email.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn" onclick="doLogin()" id="login-btn">Log In</button>
+      <div class="auth-switch">
+        <a onclick="go('screen-forgot')">Forgot password?</a>
+      </div>
+      <div class="auth-switch">
+        New to FitX? <a onclick="go('screen-signup')">Create an account</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Signup
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-signup">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Start your fitness journey</div>
+      <h2>Create account</h2>
+      <div class="error-msg" id="signup-error"></div>
+      <div class="input-group">
+        <label>Full name</label>
+        <input type="text" id="signup-name" placeholder="Alex Johnson">
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="you@email.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="signup-pass" placeholder="At least 6 characters">
+      </div>
+      <div class="input-group">
+        <label>Confirm password</label>
+        <input type="password" id="signup-pass2" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <button class="btn" onclick="doSignup()" id="signup-btn">Create Account</button>
+      <div class="auth-switch">
+        Already have an account? <a onclick="go('screen-login')">Log in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Forgot Password (request reset)
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-forgot">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Reset your password</div>
+      <h2>Forgot password?</h2>
+      <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px">
+        Enter your account email and we'll generate a password reset link.
+      </p>
+      <div class="error-msg" id="forgot-error"></div>
+      <div class="ok-msg" id="forgot-ok" style="display:none;background:var(--green-soft);border:1px solid var(--green);color:var(--green-dark);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;word-break:break-all"></div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="forgot-email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')doForgotPassword()">
+      </div>
+      <button class="btn" onclick="doForgotPassword()" id="forgot-btn">Send Reset Link</button>
+      <div class="auth-switch">
+        <a onclick="go('screen-login')">Back to login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Reset Password (using token)
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-reset">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Choose a new password</div>
+      <h2>Reset password</h2>
+      <div class="error-msg" id="reset-error"></div>
+      <div class="input-group">
+        <label>Reset token</label>
+        <input type="text" id="reset-token" placeholder="Paste the token you received">
+      </div>
+      <div class="input-group">
+        <label>New password</label>
+        <input type="password" id="reset-pass" placeholder="At least 6 characters">
+      </div>
+      <div class="input-group">
+        <label>Confirm new password</label>
+        <input type="password" id="reset-pass2" placeholder="••••••••" onkeydown="if(event.key==='Enter')doResetPassword()">
+      </div>
+      <button class="btn" onclick="doResetPassword()" id="reset-btn">Reset Password</button>
+      <div class="auth-switch">
+        <a onclick="go('screen-login')">Back to login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: App (Home / Workout / Nutrition / AI / Form / Profile)
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-app">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-logo" onclick="showTab('home')">FitX</div>
+    <div class="app-username" id="header-name"></div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </header>
+
+  <!-- ── TAB: Home ──────────────────────────── -->
+  <div class="app-content" id="tab-home">
+    <div class="welcome-banner">
+      <h2 id="home-greeting">Good morning! 👋</h2>
+      <p id="home-goal">Loading your goal…</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="num" id="stat-streak">–</div>
+        <div class="lbl">🔥 Streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-meals">–</div>
+        <div class="lbl">🍽 Meals today</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-exercises">–</div>
+        <div class="lbl">💪 Exercises</div>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <div class="qa-card" onclick="showTab('workout')">
+        <div class="qa-icon">🏋️</div>
+        <div class="qa-label">Workout</div>
+        <div class="qa-sub">Log today's session</div>
+      </div>
+      <div class="qa-card" onclick="showTab('nutrition')">
+        <div class="qa-icon">🥗</div>
+        <div class="qa-label">Nutrition</div>
+        <div class="qa-sub">Track your meals</div>
+      </div>
+      <div class="qa-card" onclick="showTab('coach')">
+        <div class="qa-icon">🤖</div>
+        <div class="qa-label">AI Coach</div>
+        <div class="qa-sub">Get personalized advice</div>
+      </div>
+      <div class="qa-card" onclick="showTab('form')">
+        <div class="qa-icon">📷</div>
+        <div class="qa-label">Form Check</div>
+        <div class="qa-sub">AI posture analysis</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Workout ───────────────────────── -->
+  <div class="app-content" id="tab-workout" style="display:none">
+    <div class="card">
+      <div class="card-title"><span>🏋️</span> My Workout Plan</div>
+      <div class="day-tabs" id="day-tabs"></div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="workout-progress" style="width:0%"></div>
+      </div>
+      <div id="exercise-list"><!-- exercises rendered here --></div>
+      <button class="btn-sm green" onclick="toggleAddForm()" style="margin-top:8px">+ Add Exercise</button>
+      <div class="add-form" id="add-exercise-form">
+        <div class="form-row">
+          <input class="form-input" id="ex-name" placeholder="Exercise name (e.g. Bench Press)">
+        </div>
+        <div class="form-row three">
+          <input class="form-input" id="ex-sets"   type="number" placeholder="Sets" min="1" value="3">
+          <input class="form-input" id="ex-reps"   type="number" placeholder="Reps" min="1" value="10">
+          <input class="form-input" id="ex-weight" type="number" placeholder="kg"   min="0" value="0">
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-sm green" onclick="addExercise()">Add</button>
+          <button class="btn-sm grey"  onclick="toggleAddForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Nutrition ────────────────────── -->
+  <div class="app-content" id="tab-nutrition" style="display:none">
+    <div class="card">
+      <div class="card-title"><span>🥗</span> Today's Nutrition</div>
+      <div class="calorie-ring-wrap">
+        <div class="calorie-ring">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="46" fill="none" stroke="#e0e8e0" stroke-width="10"/>
+            <circle id="calorie-arc" cx="55" cy="55" r="46" fill="none" stroke="#4CAF50" stroke-width="10"
+              stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289"/>
+          </svg>
+          <div class="calorie-ring-text">
+            <span class="cal-num"  id="cal-current">0</span>
+            <span class="cal-goal" id="cal-goal-lbl">/ 2000</span>
+          </div>
+        </div>
+        <div class="macro-bars">
+          <div class="macro-row">
+            <div class="macro-label"><span>Protein</span><span id="m-protein">0g</span></div>
+            <div class="macro-bar"><div class="macro-fill protein" id="mf-protein" style="width:0%"></div></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-label"><span>Carbs</span><span id="m-carbs">0g</span></div>
+            <div class="macro-bar"><div class="macro-fill carbs" id="mf-carbs" style="width:0%"></div></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-label"><span>Fat</span><span id="m-fat">0g</span></div>
+            <div class="macro-bar"><div class="macro-fill fat" id="mf-fat" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🍽</span> Meals</div>
+      <div id="meal-list"><!-- meals rendered here --></div>
+      <button class="btn-sm green" onclick="toggleMealForm()" style="margin-top:8px">+ Log Meal</button>
+      <div class="add-form" id="add-meal-form">
+        <div class="form-row">
+          <input class="form-input" id="m-name" placeholder="Meal name">
+          <input class="form-input" id="m-cals" type="number" placeholder="Calories">
+        </div>
+        <div class="form-row three">
+          <input class="form-input" id="m-protein" type="number" placeholder="Protein g" min="0" value="0">
+          <input class="form-input" id="m-carbs"   type="number" placeholder="Carbs g"   min="0" value="0">
+          <input class="form-input" id="m-fat"     type="number" placeholder="Fat g"     min="0" value="0">
+        </div>
+        <div class="form-row" style="margin-bottom:10px">
+          <select class="form-input" id="m-type">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-sm green" onclick="addMeal()">Log</button>
+          <button class="btn-sm grey"  onclick="toggleMealForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: AI Coach ──────────────────────── -->
+  <div class="app-content" id="tab-coach" style="display:none">
+    <div class="card" style="padding:0">
+      <div style="padding:16px 18px; border-bottom:1px solid var(--border)">
+        <div class="card-title" style="margin:0"><span>🤖</span> FitX AI Coach</div>
+      </div>
+      <div style="padding:16px">
+        <div class="chat-wrap">
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-chips" id="chat-chips">
+            <button class="chat-chip" onclick="sendChip(this)">Suggest a workout</button>
+            <button class="chat-chip" onclick="sendChip(this)">How much protein do I need?</button>
+            <button class="chat-chip" onclick="sendChip(this)">Help me lose weight</button>
+            <button class="chat-chip" onclick="sendChip(this)">Best exercises for beginners</button>
+          </div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" placeholder="Ask your AI coach…"
+              onkeydown="if(event.key==='Enter')sendMessage()">
+            <button class="chat-send" onclick="sendMessage()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Form Checker ──────────────────── -->
+  <div class="app-content" id="tab-form" style="display:none">
+    <div class="form-checker-header">
+      <h2>📷 AI Form Checker</h2>
+      <p>Point your camera at yourself and FitX will detect your exercise and correct your form in real time.</p>
+    </div>
+
+    <div class="camera-container">
+      <video id="cameraFeed" autoplay playsinline muted></video>
+      <canvas id="poseCanvas"></canvas>
+      <div class="camera-overlay" id="camera-overlay">
+        <div class="cam-icon">📷</div>
+        <p>Camera is off. Press <strong>Start Analysis</strong> to begin.</p>
+      </div>
+    </div>
+
+    <div class="camera-controls">
+      <button class="cam-btn start" id="start-cam-btn" onclick="startCamera()">▶ Start Analysis</button>
+      <button class="cam-btn stop"  id="stop-cam-btn"  onclick="stopCamera()" style="display:none">⏹ Stop</button>
+    </div>
+
+    <!-- Detected exercise badge -->
+    <div id="detected-ex-wrap" style="display:none; margin-bottom:16px">
+      <div class="detected-exercise">
+        <span>🏋️</span>
+        <span id="detected-ex-name">Detecting…</span>
+      </div>
+    </div>
+
+    <!-- Form score ring -->
+    <div class="feedback-panel" id="score-panel" style="display:none">
+      <div class="score-ring-wrap">
+        <div class="score-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#e0e8e0" stroke-width="8"/>
+            <circle id="score-arc" cx="40" cy="40" r="32" fill="none" stroke="#4CAF50" stroke-width="8"
+              stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/>
+          </svg>
+          <div class="score-ring-text">
+            <span class="score-num" id="score-num" style="color:var(--green)">–</span>
+            <span class="score-lbl">Score</span>
+          </div>
+        </div>
+        <div class="score-desc">
+          <h4 id="score-label">Waiting for movement…</h4>
+          <p  id="score-detail">Begin the exercise and FitX will score your form.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live feedback panel -->
+    <div class="feedback-panel">
+      <div class="feedback-header">
+        <div class="feedback-status idle" id="feedback-status"></div>
+        <div class="feedback-title"  id="feedback-title">Waiting for camera…</div>
+      </div>
+      <div class="feedback-body" id="feedback-body">
+        Start the camera to begin real-time form analysis. Stand 1–2 metres back so your full body is visible.
+      </div>
+    </div>
+
+    <!-- Corrections list -->
+    <div class="card" id="corrections-card" style="display:none">
+      <div class="card-title"><span>⚠️</span> Form Corrections</div>
+      <ul class="correction-list" id="corrections-list"></ul>
+    </div>
+
+    <!-- Tips -->
+    <div class="card">
+      <div class="card-title"><span>💡</span> Tips for best results</div>
+      <ul class="correction-list">
+        <li class="correction-item"><span class="ci-icon">📏</span><span>Stand 1–2 metres from the camera so your full body is in frame.</span></li>
+        <li class="correction-item"><span class="ci-icon">💡</span><span>Make sure the room is well lit — avoid bright light behind you.</span></li>
+        <li class="correction-item"><span class="ci-icon">👕</span><span>Wear form-fitting clothes so your joints are clearly visible.</span></li>
+        <li class="correction-item"><span class="ci-icon">📱</span><span>Prop your phone or laptop at body height for a side-on view.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── TAB: Profile ───────────────────────── -->
+  <div class="app-content" id="tab-profile" style="display:none">
+    <div class="card">
+      <div class="profile-avatar" id="profile-avatar">A</div>
+      <div class="profile-name"  id="profile-name">Loading…</div>
+      <div class="profile-email" id="profile-email"></div>
+      <div class="profile-stat-row">
+        <div class="profile-stat"><div class="ps-num" id="ps-streak">–</div><div class="ps-lbl">🔥 Streak</div></div>
+        <div class="profile-stat"><div class="ps-num" id="ps-meals">–</div><div class="ps-lbl">🍽 Total meals</div></div>
+        <div class="profile-stat"><div class="ps-num" id="ps-exercises">–</div><div class="ps-lbl">💪 Exercises</div></div>
+        <div class="profile-stat"><div class="ps-num" id="ps-goal">–</div><div class="ps-lbl">🎯 Goal</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🎯</span> Update Goal</div>
+      <input class="form-input" id="goal-input" placeholder="e.g. Build muscle, Lose 5kg…" style="margin-bottom:10px">
+      <button class="btn-sm green" onclick="updateGoal()">Save Goal</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🔒</span> Change Password</div>
+      <div class="error-msg" id="changepw-error"></div>
+      <input class="form-input" type="password" id="current-pass" placeholder="Current password" style="margin-bottom:10px">
+      <input class="form-input" type="password" id="new-pass" placeholder="New password (min. 6 chars)" style="margin-bottom:10px">
+      <input class="form-input" type="password" id="new-pass2" placeholder="Confirm new password" style="margin-bottom:10px">
+      <button class="btn-sm green" onclick="changePassword()" id="changepw-btn">Update Password</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>⚠️</span> Danger Zone</div>
+      <button class="btn danger" onclick="deleteAccount()">Delete Account & All Data</button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-home"      onclick="showTab('home')">     <span class="icon">🏠</span>Home</button>
+    <button class="nav-btn"        id="nav-workout"   onclick="showTab('workout')">  <span class="icon">🏋️</span>Workout</button>
+    <button class="nav-btn"        id="nav-nutrition" onclick="showTab('nutrition')"><span class="icon">🥗</span>Nutrition</button>
+    <button class="nav-btn"        id="nav-coach"     onclick="showTab('coach')">    <span class="icon">🤖</span>Coach</button>
+    <button class="nav-btn"        id="nav-form"      onclick="showTab('form')">     <span class="icon">📷</span>Form</button>
+    <button class="nav-btn"        id="nav-profile"   onclick="showTab('profile')">  <span class="icon">👤</span>Profile</button>
+  </nav>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- TensorFlow.js + MoveNet for pose detection -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+
+<script>
+// ════════════════════════════════════════════════════
+// CONFIG — change this to your deployed backend URL
+// ════════════════════════════════════════════════════
+const API = 'http://localhost:5000/api';
+
+// ── State ─────────────────────────────────────────
+let token    = localStorage.getItem('fitx_token') || null;
+let userData = JSON.parse(localStorage.getItem('fitx_user') || 'null');
+let exercises = [];
+let meals     = [];
+let selectedDay = 'Monday';
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+// ── Camera / Pose state ───────────────────────────
+let cameraStream   = null;
+let poseDetector   = null;
+let analyzeLoop    = null;
+let poseHistory    = [];
+let lastFeedback   = Date.now();
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function go(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showTab(tab) {
+  ['home','workout','nutrition','coach','form','profile'].forEach(t => {
+    document.getElementById('tab-'+t).style.display     = t === tab ? '' : 'none';
+    document.getElementById('nav-'+t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'home')      loadHome();
+  if (tab === 'workout')   loadWorkouts();
+  if (tab === 'nutrition') loadNutrition();
+  if (tab === 'coach')     initChat();
+  if (tab === 'profile')   loadProfile();
+  if (tab !== 'form')      stopCamera(); // stop camera when leaving
+}
+
+// ════════════════════════════════════════════════════
+// API HELPERS
+// ════════════════════════════════════════════════════
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res  = await fetch(API + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Request failed');
+  return data;
+}
+
+// ════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.style.display = 'none';
+
+  if (!email || !pass) { showError(errEl, 'Please enter email and password.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    const data = await api('POST', '/auth/login', { email, password: pass });
+    saveSession(data);
+    loadAppScreen();
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Log In';
+    btn.disabled  = false;
+  }
+}
+
+async function doSignup() {
+  const name  = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const pass  = document.getElementById('signup-pass').value;
+  const pass2 = document.getElementById('signup-pass2').value;
+  const errEl = document.getElementById('signup-error');
+  const btn   = document.getElementById('signup-btn');
+  errEl.style.display = 'none';
+
+  if (!name || !email || !pass) { showError(errEl, 'Please fill in all fields.'); return; }
+  if (pass.length < 6)          { showError(errEl, 'Password must be at least 6 characters.'); return; }
+  if (pass !== pass2)           { showError(errEl, 'Passwords do not match.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    const data = await api('POST', '/auth/register', { name, email, password: pass });
+    saveSession(data);
+    loadAppScreen();
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Create Account';
+    btn.disabled  = false;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// FORGOT / RESET PASSWORD
+// ════════════════════════════════════════════════════
+async function doForgotPassword() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const okEl  = document.getElementById('forgot-ok');
+  const btn   = document.getElementById('forgot-btn');
+  errEl.style.display = 'none';
+  okEl.style.display  = 'none';
+
+  if (!email) { showError(errEl, 'Please enter your email address.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    const data = await api('POST', '/auth/forgot-password', { email });
+    okEl.textContent   = '📧 ' + data.message + ' Please check your inbox (and spam folder).';
+    okEl.style.display = 'block';
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Send Reset Link';
+    btn.disabled  = false;
+  }
+}
+
+async function doResetPassword() {
+  const tokenVal = document.getElementById('reset-token').value.trim();
+  const pass     = document.getElementById('reset-pass').value;
+  const pass2    = document.getElementById('reset-pass2').value;
+  const errEl    = document.getElementById('reset-error');
+  const btn      = document.getElementById('reset-btn');
+  errEl.style.display = 'none';
+
+  if (!tokenVal || !pass) { showError(errEl, 'Please fill in all fields.'); return; }
+  if (pass.length < 6)    { showError(errEl, 'Password must be at least 6 characters.'); return; }
+  if (pass !== pass2)     { showError(errEl, 'Passwords do not match.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    const data = await api('POST', `/auth/reset-password/${tokenVal}`, { password: pass });
+    saveSession(data);
+    showToast('Password reset successfully ✅');
+    loadAppScreen();
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Reset Password';
+    btn.disabled  = false;
+  }
+}
+
+function doLogout() {
+  stopCamera();
+  token    = null;
+  userData = null;
+  localStorage.removeItem('fitx_token');
+  localStorage.removeItem('fitx_user');
+  go('screen-login');
+}
+
+function saveSession(data) {
+  token    = data.token;
+  userData = data.user;
+  localStorage.setItem('fitx_token', token);
+  localStorage.setItem('fitx_user', JSON.stringify(userData));
+}
+
+function loadAppScreen() {
+  go('screen-app');
+  showTab('home');
+}
+
+// ════════════════════════════════════════════════════
+// HOME
+// ════════════════════════════════════════════════════
+async function loadHome() {
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('home-greeting').textContent = `${greet}, ${userData?.name?.split(' ')[0] || ''}! 👋`;
+  document.getElementById('header-name').textContent   = userData?.name || '';
+
+  try {
+    const profile = await api('GET', '/profile');
+    document.getElementById('home-goal').textContent  = `Goal: ${profile.goal}`;
+    document.getElementById('stat-streak').textContent    = profile.streak;
+    document.getElementById('stat-exercises').textContent = profile.totalExercises;
+
+    // Today's meals count
+    const mealData = await api('GET', '/data/meals');
+    document.getElementById('stat-meals').textContent = mealData.meals.length;
+  } catch (e) {
+    // If backend not connected, show placeholders
+    document.getElementById('home-goal').textContent = `Goal: ${userData?.goal || 'Set a goal'}`;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// WORKOUTS
+// ════════════════════════════════════════════════════
+async function loadWorkouts() {
+  renderDayTabs();
+  try {
+    exercises = await api('GET', '/data/workouts');
+  } catch (e) {
+    exercises = JSON.parse(localStorage.getItem('fitx_exercises_local') || '[]');
+  }
+  renderExercises();
+}
+
+function renderDayTabs() {
+  const wrap = document.getElementById('day-tabs');
+  wrap.innerHTML = DAYS.map(d =>
+    `<button class="day-tab ${d===selectedDay?'active':''}" onclick="selectDay('${d}')">${d.slice(0,3)}</button>`
+  ).join('');
+}
+
+function selectDay(day) {
+  selectedDay = day;
+  renderDayTabs();
+  renderExercises();
+}
+
+function renderExercises() {
+  const list = document.getElementById('exercise-list');
+  const dayEx = exercises.filter(e => e.day === selectedDay);
+
+  if (!dayEx.length) {
+    list.innerHTML = `<p style="color:var(--muted);text-align:center;padding:20px 0">No exercises for ${selectedDay} yet. Add one below!</p>`;
+    document.getElementById('workout-progress').style.width = '0%';
+    return;
+  }
+
+  const done = dayEx.filter(e => e.done).length;
+  const pct  = Math.round((done / dayEx.length) * 100);
+  document.getElementById('workout-progress').style.width = pct + '%';
+
+  list.innerHTML = dayEx.map(ex => `
+    <div class="exercise-item ${ex.done ? 'done-item' : ''}">
+      <input type="checkbox" ${ex.done ? 'checked' : ''} onchange="toggleExercise('${ex._id || ex.id}')">
+      <div class="ex-info">
+        <div class="ex-name" style="${ex.done ? 'text-decoration:line-through' : ''}">${ex.name}</div>
+        <div class="ex-meta">${ex.sets} sets × ${ex.reps} reps${ex.weight ? ' · ' + ex.weight + 'kg' : ''} · ${ex.day}</div>
+      </div>
+      <button class="ex-del" onclick="deleteExercise('${ex._id || ex.id}')">🗑</button>
+    </div>
+  `).join('');
+}
+
+function toggleAddForm() {
+  document.getElementById('add-exercise-form').classList.toggle('open');
+}
+
+async function addExercise() {
+  const name   = document.getElementById('ex-name').value.trim();
+  const sets   = +document.getElementById('ex-sets').value;
+  const reps   = +document.getElementById('ex-reps').value;
+  const weight = +document.getElementById('ex-weight').value;
+
+  if (!name) { showToast('Enter an exercise name'); return; }
+
+  try {
+    exercises = await api('POST', '/data/workouts', { name, sets, reps, weight, day: selectedDay });
+    renderExercises();
+    document.getElementById('ex-name').value = '';
+    toggleAddForm();
+    showToast('Exercise added ✅');
+  } catch (e) {
+    showToast('Could not save — check backend connection');
+  }
+}
+
+async function toggleExercise(id) {
+  try {
+    await api('PATCH', `/data/workouts/${id}/toggle`);
+    exercises = await api('GET', '/data/workouts');
+    renderExercises();
+  } catch (e) { showToast('Error updating exercise'); }
+}
+
+async function deleteExercise(id) {
+  try {
+    await api('DELETE', `/data/workouts/${id}`);
+    exercises = exercises.filter(e => (e._id || e.id) !== id);
+    renderExercises();
+    showToast('Exercise deleted');
+  } catch (e) { showToast('Error deleting exercise'); }
+}
+
+// ════════════════════════════════════════════════════
+// NUTRITION
+// ════════════════════════════════════════════════════
+async function loadNutrition() {
+  try {
+    const data = await api('GET', '/data/meals');
+    meals = data.meals;
+    renderNutrition(data.calorieGoal || 2000);
+  } catch (e) {
+    meals = [];
+    renderNutrition(2000);
+  }
+}
+
+function renderNutrition(goal) {
+  const totalCal = meals.reduce((s, m) => s + m.calories, 0);
+  const protein  = meals.reduce((s, m) => s + (m.protein || 0), 0);
+  const carbs    = meals.reduce((s, m) => s + (m.carbs || 0), 0);
+  const fat      = meals.reduce((s, m) => s + (m.fat || 0), 0);
+
+  // Calorie ring
+  const pct = Math.min(totalCal / goal, 1);
+  const circ = 289;
+  document.getElementById('calorie-arc').style.strokeDashoffset = circ - pct * circ;
+  document.getElementById('cal-current').textContent = totalCal;
+  document.getElementById('cal-goal-lbl').textContent = `/ ${goal}`;
+
+  // Macros
+  document.getElementById('m-protein').textContent = protein + 'g';
+  document.getElementById('m-carbs').textContent   = carbs   + 'g';
+  document.getElementById('m-fat').textContent     = fat     + 'g';
+  document.getElementById('mf-protein').style.width = Math.min(protein/2, 100)+'%';
+  document.getElementById('mf-carbs').style.width   = Math.min(carbs/3,   100)+'%';
+  document.getElementById('mf-fat').style.width     = Math.min(fat/1.5,   100)+'%';
+
+  // Meals list
+  const list = document.getElementById('meal-list');
+  if (!meals.length) {
+    list.innerHTML = `<p style="color:var(--muted);text-align:center;padding:20px 0">No meals logged today. Add your first one!</p>`;
+    return;
+  }
+  list.innerHTML = meals.map(m => `
+    <div class="meal-item">
+      <span class="meal-type-badge badge-${m.type}">${m.type}</span>
+      <div class="meal-info">
+        <div class="meal-name">${m.name}</div>
+        <div class="meal-cals">${m.calories} kcal · P:${m.protein||0}g C:${m.carbs||0}g F:${m.fat||0}g</div>
+      </div>
+      <button class="ex-del" onclick="deleteMeal('${m._id||m.id}')">🗑</button>
+    </div>
+  `).join('');
+}
+
+function toggleMealForm() {
+  document.getElementById('add-meal-form').classList.toggle('open');
+}
+
+async function addMeal() {
+  const name    = document.getElementById('m-name').value.trim();
+  const calories= +document.getElementById('m-cals').value;
+  const protein = +document.getElementById('m-protein').value;
+  const carbs   = +document.getElementById('m-carbs').value;
+  const fat     = +document.getElementById('m-fat').value;
+  const type    = document.getElementById('m-type').value;
+
+  if (!name || !calories) { showToast('Enter meal name and calories'); return; }
+
+  try {
+    await api('POST', '/data/meals', { name, calories, protein, carbs, fat, type });
+    await loadNutrition();
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-cals').value = '';
+    toggleMealForm();
+    showToast('Meal logged ✅');
+  } catch (e) { showToast('Could not save meal'); }
+}
+
+async function deleteMeal(id) {
+  try {
+    await api('DELETE', `/data/meals/${id}`);
+    await loadNutrition();
+    showToast('Meal deleted');
+  } catch (e) { showToast('Error deleting meal'); }
+}
+
+// ════════════════════════════════════════════════════
+// AI COACH — uses Claude API via fetch
+// ════════════════════════════════════════════════════
+let chatHistory = [];
+let chatInit    = false;
+
+function initChat() {
+  if (chatInit) return;
+  chatInit = true;
+  addBotMsg("Hey! I'm your FitX AI Coach 💪 I can help with workout plans, nutrition advice, form tips, and more. What would you like to work on?");
+}
+
+function sendChip(btn) {
+  const text = btn.textContent;
+  document.getElementById('chat-chips').style.display = 'none';
+  sendUserMsg(text);
+}
+
+function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text  = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  sendUserMsg(text);
+}
+
+async function sendUserMsg(text) {
+  addMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  const typingId = addTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are FitX, an expert AI fitness coach. You give concise, practical advice on workouts, nutrition, form, and recovery. 
+User's name: ${userData?.name || 'User'}, Goal: ${userData?.goal || 'Get fit'}. 
+Keep responses brief, friendly, and actionable. Use emojis sparingly.`,
+        messages: chatHistory,
+      }),
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || "Sorry, I couldn't get a response. Please try again.";
+    removeTyping(typingId);
+    addBotMsg(reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch (e) {
+    removeTyping(typingId);
+    addBotMsg("I'm having trouble connecting right now. Check your internet connection and try again.");
+  }
+}
+
+function addMsg(role, text) {
+  const wrap = document.getElementById('chat-messages');
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const div  = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `
+    <div class="chat-bubble">${text.replace(/\n/g, '<br>')}</div>
+    <div class="chat-meta">${time}</div>
+  `;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function addBotMsg(text) { addMsg('bot', text); }
+
+function addTyping() {
+  const wrap = document.getElementById('chat-messages');
+  const id   = 'typing-' + Date.now();
+  const div  = document.createElement('div');
+  div.className = 'chat-msg bot';
+  div.id        = id;
+  div.innerHTML = `<div class="chat-bubble"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+// ════════════════════════════════════════════════════
+// FORM CHECKER — TensorFlow MoveNet + Claude feedback
+// ════════════════════════════════════════════════════
+
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    const video = document.getElementById('cameraFeed');
+    video.srcObject = cameraStream;
+    document.getElementById('camera-overlay').style.display = 'none';
+    document.getElementById('start-cam-btn').style.display  = 'none';
+    document.getElementById('stop-cam-btn').style.display   = '';
+
+    // Update feedback UI
+    setFeedback('warning', 'Loading pose model…', 'Please wait while the AI model loads. This takes a few seconds.');
+
+    // Load MoveNet pose detector
+    poseDetector = await poseDetection.createDetector(
+      poseDetection.SupportedModels.MoveNet,
+      { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING }
+    );
+
+    setFeedback('good', 'Ready — begin your exercise', 'Stand 1–2 metres from the camera. FitX will detect your exercise automatically.');
+    document.getElementById('detected-ex-wrap').style.display = '';
+    document.getElementById('score-panel').style.display      = '';
+
+    startAnalysisLoop();
+  } catch (e) {
+    setFeedback('bad', 'Camera access denied', 'Please allow camera access in your browser settings and try again.');
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  if (analyzeLoop) {
+    cancelAnimationFrame(analyzeLoop);
+    analyzeLoop = null;
+  }
+  const overlay  = document.getElementById('camera-overlay');
+  const startBtn = document.getElementById('start-cam-btn');
+  const stopBtn  = document.getElementById('stop-cam-btn');
+  if (overlay)  overlay.style.display = '';
+  if (startBtn) startBtn.style.display = '';
+  if (stopBtn)  stopBtn.style.display  = 'none';
+
+  const detectedWrap = document.getElementById('detected-ex-wrap');
+  const scorePanel   = document.getElementById('score-panel');
+  if (detectedWrap) detectedWrap.style.display = 'none';
+  if (scorePanel)   scorePanel.style.display   = 'none';
+
+  poseHistory = [];
+}
+
+function startAnalysisLoop() {
+  const video  = document.getElementById('cameraFeed');
+  const canvas = document.getElementById('poseCanvas');
+
+  async function loop() {
+    if (!cameraStream || !poseDetector) return;
+
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+
+    try {
+      const poses = await poseDetector.estimatePoses(video);
+      if (poses.length > 0) {
+        drawSkeleton(ctx, poses[0], canvas.width, canvas.height);
+        const keypoints = poses[0].keypoints;
+        poseHistory.push({ keypoints, timestamp: Date.now() });
+        if (poseHistory.length > 60) poseHistory.shift(); // keep last 60 frames
+
+        // Run analysis every 3 seconds to avoid hammering the API
+        if (Date.now() - lastFeedback > 3000 && poseHistory.length >= 10) {
+          lastFeedback = Date.now();
+          analyzeForm(keypoints);
+        }
+      }
+    } catch (e) { /* silently ignore single-frame errors */ }
+
+    analyzeLoop = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// Draw skeleton on canvas
+function drawSkeleton(ctx, pose, w, h) {
+  ctx.clearRect(0, 0, w, h);
+  const kp = pose.keypoints;
+  const connections = [
+    [5,7],[7,9],[6,8],[8,10],   // arms
+    [5,6],[5,11],[6,12],[11,12], // torso
+    [11,13],[13,15],[12,14],[14,16] // legs
+  ];
+
+  ctx.strokeStyle = '#4CAF50';
+  ctx.lineWidth   = 3;
+  connections.forEach(([a, b]) => {
+    const pa = kp[a], pb = kp[b];
+    if (pa.score > 0.3 && pb.score > 0.3) {
+      ctx.beginPath();
+      ctx.moveTo(pa.x * (w / ctx.canvas.width || 1), pa.y * (h / ctx.canvas.height || 1));
+      ctx.lineTo(pb.x * (w / ctx.canvas.width || 1), pb.y * (h / ctx.canvas.height || 1));
+      ctx.stroke();
+    }
+  });
+
+  kp.forEach(p => {
+    if (p.score > 0.3) {
+      ctx.beginPath();
+      ctx.arc(p.x * (w / ctx.canvas.width || 1), p.y * (h / ctx.canvas.height || 1), 5, 0, 2 * Math.PI);
+      ctx.fillStyle = '#fff';
+      ctx.fill();
+      ctx.strokeStyle = '#4CAF50';
+      ctx.lineWidth   = 2;
+      ctx.stroke();
+    }
+  });
+}
+
+// Send pose data to Claude for exercise detection + form feedback
+async function analyzeForm(keypoints) {
+  const poseDesc  = summarizePose(keypoints);
+  const angles    = calculateAngles(keypoints);
+  const movement  = detectMovement();
+
+  const fullDesc = `
+JOINT POSITIONS:
+${poseDesc}
+
+CALCULATED JOINT ANGLES:
+${angles}
+
+MOVEMENT ANALYSIS (last ${poseHistory.length} frames):
+${movement}
+`.trim();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are an expert fitness coach analysing real-time body pose data from a camera.
+
+You receive:
+- Joint positions (x,y pixel coordinates)
+- Calculated joint angles in degrees
+- Movement analysis showing how joints are moving over time
+
+USE THE ANGLES AND MOVEMENT DATA — not just positions — to identify the exercise.
+
+Common exercise signatures:
+- SQUAT: knees bend (knee angle < 120°), hips drop (hip y increases), repeated up-down movement
+- PUSHUP: person horizontal, elbows bend/extend, wrists near shoulders
+- BICEP CURL: elbow angle changes 60-160°, wrists move toward shoulders
+- SHOULDER PRESS: wrists rise above shoulders, elbow angle increases
+- LUNGE: one knee bends deeply, hips drop, asymmetric leg positions
+- DEADLIFT: hips hinge, back angle changes, wrists near hips
+- JUMPING JACK: arms and legs spread wide simultaneously
+- PLANK: body horizontal, stable position, hips aligned with shoulders
+
+If knee angles are < 140° and hips are lower than normal standing → likely SQUAT.
+If movement is detected in knee/hip joints repeatedly → identify the exercise.
+
+Respond ONLY in this exact JSON format, no other text:
+{
+  "exercise": "Exercise name here",
+  "score": 85,
+  "status": "good",
+  "summary": "One sentence overall assessment",
+  "corrections": [
+    { "icon": "⚠️", "text": "Correction detail here" }
+  ]
+}
+status must be: "good" (score>=80), "warning" (50-79), "bad" (<50).
+If truly standing still with no movement, set exercise to "Standing / Idle" and score to null.
+Be confident — if angles and movement suggest an exercise, name it.`,
+        messages: [{ role: 'user', content: fullDesc }],
+      }),
+    });
+
+    const data  = await res.json();
+    const text  = data.content?.[0]?.text || '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(clean);
+    renderFormFeedback(result);
+  } catch (e) {
+    // Silently fail — next frame will retry
+  }
+}
+
+function summarizePose(keypoints) {
+  const names = ['nose','left_eye','right_eye','left_ear','right_ear',
+    'left_shoulder','right_shoulder','left_elbow','right_elbow',
+    'left_wrist','right_wrist','left_hip','right_hip',
+    'left_knee','right_knee','left_ankle','right_ankle'];
+  return keypoints.map((kp, i) =>
+    kp.score > 0.3 ? `${names[i]}: x=${Math.round(kp.x)}, y=${Math.round(kp.y)} (confidence: ${Math.round(kp.score*100)}%)` : null
+  ).filter(Boolean).join('\n');
+}
+
+// Calculate key joint angles in degrees
+function calculateAngles(kp) {
+  const angle = (a, b, c) => {
+    if (!a || !b || !c) return null;
+    if (a.score < 0.3 || b.score < 0.3 || c.score < 0.3) return null;
+    const ab = { x: a.x - b.x, y: a.y - b.y };
+    const cb = { x: c.x - b.x, y: c.y - b.y };
+    const dot = ab.x*cb.x + ab.y*cb.y;
+    const mag = Math.sqrt((ab.x**2+ab.y**2)) * Math.sqrt((cb.x**2+cb.y**2));
+    if (mag === 0) return null;
+    return Math.round(Math.acos(Math.min(Math.max(dot/mag, -1), 1)) * 180 / Math.PI);
+  };
+
+  // Keypoint indices: 5=L-shoulder, 6=R-shoulder, 7=L-elbow, 8=R-elbow
+  // 9=L-wrist, 10=R-wrist, 11=L-hip, 12=R-hip, 13=L-knee, 14=R-knee
+  // 15=L-ankle, 16=R-ankle
+  const results = [];
+  const la = angle(kp[5], kp[7], kp[9]);   // left elbow
+  const ra = angle(kp[6], kp[8], kp[10]);  // right elbow
+  const lk = angle(kp[11], kp[13], kp[15]); // left knee
+  const rk = angle(kp[12], kp[14], kp[16]); // right knee
+  const lh = angle(kp[5], kp[11], kp[13]);  // left hip
+  const rh = angle(kp[6], kp[12], kp[14]);  // right hip
+  const ls = angle(kp[7], kp[5], kp[11]);   // left shoulder
+  const rs = angle(kp[8], kp[6], kp[12]);   // right shoulder
+
+  if (la !== null) results.push(`Left elbow angle: ${la}°`);
+  if (ra !== null) results.push(`Right elbow angle: ${ra}°`);
+  if (lk !== null) results.push(`Left knee angle: ${lk}°`);
+  if (rk !== null) results.push(`Right knee angle: ${rk}°`);
+  if (lh !== null) results.push(`Left hip angle: ${lh}°`);
+  if (rh !== null) results.push(`Right hip angle: ${rh}°`);
+  if (ls !== null) results.push(`Left shoulder angle: ${ls}°`);
+  if (rs !== null) results.push(`Right shoulder angle: ${rs}°`);
+
+  // Body orientation
+  if (kp[5].score > 0.3 && kp[11].score > 0.3) {
+    const torsoAngle = Math.round(Math.atan2(kp[11].y - kp[5].y, kp[11].x - kp[5].x) * 180 / Math.PI);
+    results.push(`Torso angle from vertical: ${Math.abs(torsoAngle - 90)}°`);
+  }
+
+  return results.length ? results.join('\n') : 'Could not calculate angles (joints not visible)';
+}
+
+// Analyze movement over poseHistory frames
+function detectMovement() {
+  if (poseHistory.length < 5) return 'Not enough frames yet to detect movement.';
+
+  const frames = poseHistory.slice(-20); // last 20 frames
+  const first  = frames[0].keypoints;
+  const last   = frames[frames.length - 1].keypoints;
+
+  const moved = (idxA, idxB, name) => {
+    if (!first[idxA] || !last[idxA]) return null;
+    if (first[idxA].score < 0.3 || last[idxA].score < 0.3) return null;
+    const dy = Math.round(last[idxA].y - first[idxA].y);
+    const dx = Math.round(last[idxA].x - first[idxA].x);
+    if (Math.abs(dy) > 8 || Math.abs(dx) > 8) {
+      return `${name}: moved ${dx > 0 ? '+' : ''}${dx}px horizontal, ${dy > 0 ? '+' : ''}${dy}px vertical`;
+    }
+    return `${name}: stable`;
+  };
+
+  const results = [
+    moved(11, 12, 'Hips'),
+    moved(13, 14, 'Left knee'),
+    moved(14, 16, 'Right knee'),
+    moved(7,  8,  'Left elbow'),
+    moved(8,  10, 'Right elbow'),
+    moved(9,  10, 'Wrists'),
+  ].filter(Boolean);
+
+  // Detect repetitive up-down motion (squat/lunge signature)
+  if (frames.length >= 10) {
+    const hipYValues = frames.map(f => f.keypoints[11]?.y).filter(Boolean);
+    if (hipYValues.length > 5) {
+      const range = Math.max(...hipYValues) - Math.min(...hipYValues);
+      if (range > 30) results.push(`Hip vertical range: ${Math.round(range)}px — repetitive up/down movement detected`);
+    }
+    const kneeYValues = frames.map(f => f.keypoints[13]?.y).filter(Boolean);
+    if (kneeYValues.length > 5) {
+      const range = Math.max(...kneeYValues) - Math.min(...kneeYValues);
+      if (range > 20) results.push(`Knee vertical range: ${Math.round(range)}px — leg bending detected`);
+    }
+  }
+
+  return results.length ? results.join('\n') : 'Minimal movement detected — person appears stationary.';
+}
+
+function renderFormFeedback(result) {
+  // Exercise badge
+  document.getElementById('detected-ex-name').textContent = result.exercise || 'Detecting…';
+
+  // Score ring
+  if (result.score !== null && result.score !== undefined) {
+    const circ = 201;
+    const pct  = result.score / 100;
+    document.getElementById('score-arc').style.strokeDashoffset = circ - pct * circ;
+    document.getElementById('score-arc').style.stroke = result.score >= 80 ? '#4CAF50' : result.score >= 50 ? '#FF9800' : '#ef5350';
+    document.getElementById('score-num').textContent = result.score;
+    document.getElementById('score-num').style.color = result.score >= 80 ? 'var(--green)' : result.score >= 50 ? 'var(--orange)' : 'var(--red)';
+  }
+
+  document.getElementById('score-label').textContent  = result.exercise || '';
+  document.getElementById('score-detail').textContent = result.summary  || '';
+
+  // Status indicator
+  setFeedback(result.status || 'good', result.exercise || 'Analysing…', result.summary || '');
+
+  // Corrections
+  const card = document.getElementById('corrections-card');
+  const list = document.getElementById('corrections-list');
+  if (result.corrections && result.corrections.length > 0) {
+    card.style.display = '';
+    list.innerHTML = result.corrections.map(c =>
+      `<li class="correction-item"><span class="ci-icon">${c.icon || '⚠️'}</span><span>${c.text}</span></li>`
+    ).join('');
+  } else {
+    card.style.display = result.status === 'good' ? 'block' : 'none';
+    list.innerHTML = `<li class="correction-item"><span class="ci-icon">✅</span><span>Great form! Keep it up.</span></li>`;
+  }
+}
+
+function setFeedback(status, title, body) {
+  const statusEl = document.getElementById('feedback-status');
+  const titleEl  = document.getElementById('feedback-title');
+  const bodyEl   = document.getElementById('feedback-body');
+  statusEl.className = `feedback-status ${status}`;
+  titleEl.textContent = title;
+  bodyEl.textContent  = body;
+}
+
+// ════════════════════════════════════════════════════
+// PROFILE
+// ════════════════════════════════════════════════════
+async function loadProfile() {
+  try {
+    const p = await api('GET', '/profile');
+    const initial = p.name.charAt(0).toUpperCase();
+    document.getElementById('profile-avatar').textContent   = initial;
+    document.getElementById('profile-name').textContent     = p.name;
+    document.getElementById('profile-email').textContent    = p.email || userData?.email || '';
+    document.getElementById('ps-streak').textContent        = p.streak;
+    document.getElementById('ps-meals').textContent         = p.totalMeals;
+    document.getElementById('ps-exercises').textContent     = p.totalExercises;
+    document.getElementById('ps-goal').textContent          = p.goal;
+    document.getElementById('goal-input').value             = p.goal;
+  } catch (e) {
+    document.getElementById('profile-name').textContent  = userData?.name || '';
+    document.getElementById('profile-email').textContent = userData?.email || '';
+  }
+}
+
+async function updateGoal() {
+  const goal = document.getElementById('goal-input').value.trim();
+  if (!goal) return;
+  try {
+    await api('PATCH', '/profile', { goal });
+    if (userData) { userData.goal = goal; localStorage.setItem('fitx_user', JSON.stringify(userData)); }
+    showToast('Goal updated ✅');
+    loadProfile();
+  } catch (e) { showToast('Error updating goal'); }
+}
+
+async function changePassword() {
+  const currentPassword = document.getElementById('current-pass').value;
+  const newPassword     = document.getElementById('new-pass').value;
+  const newPassword2    = document.getElementById('new-pass2').value;
+  const errEl = document.getElementById('changepw-error');
+  const btn   = document.getElementById('changepw-btn');
+  errEl.style.display = 'none';
+
+  if (!currentPassword || !newPassword) { showError(errEl, 'Please fill in all fields.'); return; }
+  if (newPassword.length < 6)           { showError(errEl, 'New password must be at least 6 characters.'); return; }
+  if (newPassword !== newPassword2)     { showError(errEl, 'New passwords do not match.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    await api('PUT', '/profile/change-password', { currentPassword, newPassword });
+    showToast('Password changed ✅');
+    document.getElementById('current-pass').value = '';
+    document.getElementById('new-pass').value     = '';
+    document.getElementById('new-pass2').value    = '';
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Update Password';
+    btn.disabled  = false;
+  }
+}
+
+async function deleteAccount() {
+  if (!confirm('This will permanently delete your account and all data. Are you sure?')) return;
+  try {
+    await api('DELETE', '/profile');
+    doLogout();
+    showToast('Account deleted');
+  } catch (e) { showToast('Error deleting account'); }
+}
+
+// ════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════
+function showError(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── Init on page load ─────────────────────────────
+window.addEventListener('load', () => {
+  // Check if user arrived via a password reset email link (?reset=TOKEN)
+  const urlParams  = new URLSearchParams(window.location.search);
+  const resetToken = urlParams.get('reset');
+
+  if (resetToken) {
+    // Pre-fill the token and open the reset screen directly
+    document.getElementById('reset-token').value = resetToken;
+    go('screen-reset');
+    // Clean the token from the URL bar without reloading the page
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
+
+  if (token && userData) {
+    loadAppScreen();
+  } else {
+    go('screen-login');
+  }
+});
+</script>
+</body>
+</html>
