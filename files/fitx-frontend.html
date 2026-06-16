@@ -419,6 +419,9 @@
       </div>
       <button class="btn" onclick="doLogin()" id="login-btn">Log In</button>
       <div class="auth-switch">
+        <a onclick="go('screen-forgot')">Forgot password?</a>
+      </div>
+      <div class="auth-switch">
         New to FitX? <a onclick="go('screen-signup')">Create an account</a>
       </div>
     </div>
@@ -454,6 +457,62 @@
       <button class="btn" onclick="doSignup()" id="signup-btn">Create Account</button>
       <div class="auth-switch">
         Already have an account? <a onclick="go('screen-login')">Log in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Forgot Password (request reset)
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-forgot">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Reset your password</div>
+      <h2>Forgot password?</h2>
+      <p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px">
+        Enter your account email and we'll generate a password reset link.
+      </p>
+      <div class="error-msg" id="forgot-error"></div>
+      <div class="ok-msg" id="forgot-ok" style="display:none;background:var(--green-soft);border:1px solid var(--green);color:var(--green-dark);border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;word-break:break-all"></div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="forgot-email" placeholder="you@email.com" onkeydown="if(event.key==='Enter')doForgotPassword()">
+      </div>
+      <button class="btn" onclick="doForgotPassword()" id="forgot-btn">Send Reset Link</button>
+      <div class="auth-switch">
+        <a onclick="go('screen-login')">Back to login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Reset Password (using token)
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-reset">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Choose a new password</div>
+      <h2>Reset password</h2>
+      <div class="error-msg" id="reset-error"></div>
+      <div class="input-group">
+        <label>Reset token</label>
+        <input type="text" id="reset-token" placeholder="Paste the token you received">
+      </div>
+      <div class="input-group">
+        <label>New password</label>
+        <input type="password" id="reset-pass" placeholder="At least 6 characters">
+      </div>
+      <div class="input-group">
+        <label>Confirm new password</label>
+        <input type="password" id="reset-pass2" placeholder="••••••••" onkeydown="if(event.key==='Enter')doResetPassword()">
+      </div>
+      <button class="btn" onclick="doResetPassword()" id="reset-btn">Reset Password</button>
+      <div class="auth-switch">
+        <a onclick="go('screen-login')">Back to login</a>
       </div>
     </div>
   </div>
@@ -727,6 +786,14 @@
       <button class="btn-sm green" onclick="updateGoal()">Save Goal</button>
     </div>
     <div class="card">
+      <div class="card-title"><span>🔒</span> Change Password</div>
+      <div class="error-msg" id="changepw-error"></div>
+      <input class="form-input" type="password" id="current-pass" placeholder="Current password" style="margin-bottom:10px">
+      <input class="form-input" type="password" id="new-pass" placeholder="New password (min. 6 chars)" style="margin-bottom:10px">
+      <input class="form-input" type="password" id="new-pass2" placeholder="Confirm new password" style="margin-bottom:10px">
+      <button class="btn-sm green" onclick="changePassword()" id="changepw-btn">Update Password</button>
+    </div>
+    <div class="card">
       <div class="card-title"><span>⚠️</span> Danger Zone</div>
       <button class="btn danger" onclick="deleteAccount()">Delete Account & All Data</button>
     </div>
@@ -858,6 +925,62 @@ async function doSignup() {
     showError(errEl, e.message);
   } finally {
     btn.innerHTML = 'Create Account';
+    btn.disabled  = false;
+  }
+}
+
+// ════════════════════════════════════════════════════
+// FORGOT / RESET PASSWORD
+// ════════════════════════════════════════════════════
+async function doForgotPassword() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-error');
+  const okEl  = document.getElementById('forgot-ok');
+  const btn   = document.getElementById('forgot-btn');
+  errEl.style.display = 'none';
+  okEl.style.display  = 'none';
+
+  if (!email) { showError(errEl, 'Please enter your email address.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    const data = await api('POST', '/auth/forgot-password', { email });
+    okEl.textContent   = '📧 ' + data.message + ' Please check your inbox (and spam folder).';
+    okEl.style.display = 'block';
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Send Reset Link';
+    btn.disabled  = false;
+  }
+}
+
+async function doResetPassword() {
+  const tokenVal = document.getElementById('reset-token').value.trim();
+  const pass     = document.getElementById('reset-pass').value;
+  const pass2    = document.getElementById('reset-pass2').value;
+  const errEl    = document.getElementById('reset-error');
+  const btn      = document.getElementById('reset-btn');
+  errEl.style.display = 'none';
+
+  if (!tokenVal || !pass) { showError(errEl, 'Please fill in all fields.'); return; }
+  if (pass.length < 6)    { showError(errEl, 'Password must be at least 6 characters.'); return; }
+  if (pass !== pass2)     { showError(errEl, 'Passwords do not match.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    const data = await api('POST', `/auth/reset-password/${tokenVal}`, { password: pass });
+    saveSession(data);
+    showToast('Password reset successfully ✅');
+    loadAppScreen();
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Reset Password';
     btn.disabled  = false;
   }
 }
@@ -1543,6 +1666,35 @@ async function updateGoal() {
   } catch (e) { showToast('Error updating goal'); }
 }
 
+async function changePassword() {
+  const currentPassword = document.getElementById('current-pass').value;
+  const newPassword     = document.getElementById('new-pass').value;
+  const newPassword2    = document.getElementById('new-pass2').value;
+  const errEl = document.getElementById('changepw-error');
+  const btn   = document.getElementById('changepw-btn');
+  errEl.style.display = 'none';
+
+  if (!currentPassword || !newPassword) { showError(errEl, 'Please fill in all fields.'); return; }
+  if (newPassword.length < 6)           { showError(errEl, 'New password must be at least 6 characters.'); return; }
+  if (newPassword !== newPassword2)     { showError(errEl, 'New passwords do not match.'); return; }
+
+  btn.innerHTML = '<span class="loader"></span>';
+  btn.disabled  = true;
+
+  try {
+    await api('PUT', '/profile/change-password', { currentPassword, newPassword });
+    showToast('Password changed ✅');
+    document.getElementById('current-pass').value = '';
+    document.getElementById('new-pass').value     = '';
+    document.getElementById('new-pass2').value    = '';
+  } catch (e) {
+    showError(errEl, e.message);
+  } finally {
+    btn.innerHTML = 'Update Password';
+    btn.disabled  = false;
+  }
+}
+
 async function deleteAccount() {
   if (!confirm('This will permanently delete your account and all data. Are you sure?')) return;
   try {
@@ -1566,6 +1718,19 @@ function showToast(msg) {
 
 // ── Init on page load ─────────────────────────────
 window.addEventListener('load', () => {
+  // Check if user arrived via a password reset email link (?reset=TOKEN)
+  const urlParams  = new URLSearchParams(window.location.search);
+  const resetToken = urlParams.get('reset');
+
+  if (resetToken) {
+    // Pre-fill the token and open the reset screen directly
+    document.getElementById('reset-token').value = resetToken;
+    go('screen-reset');
+    // Clean the token from the URL bar without reloading the page
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return;
+  }
+
   if (token && userData) {
     loadAppScreen();
   } else {

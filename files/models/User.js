@@ -30,6 +30,18 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // ─── Password reset fields ───────────────────────────────
+    // Used by the "Forgot Password" flow. A random token is generated,
+    // hashed, and stored here with an expiry. The unhashed token is sent
+    // to the user (via email or returned directly in dev mode).
+    resetPasswordToken: {
+      type: String,
+      default: undefined,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: undefined,
+    },
   },
   {
     timestamps: true,         // Adds createdAt and updatedAt automatically

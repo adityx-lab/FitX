@@ -12,36 +12,36 @@ const User = require('../models/User');
 //   - If NO  → sends back a 401 Unauthorized error immediately
 
 const protect = async (req, res, next) => {
-  let token;
-
   // JWT is sent in the Authorization header like:
   // Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer ')
+    !req.headers.authorization ||
+    !req.headers.authorization.startsWith('Bearer ')
   ) {
-    try {
-      // 1. Extract the token (strip "Bearer " prefix)
-      token = req.headers.authorization.split(' ')[1];
-
-      // 2. Verify the token using our secret key
-      //    If the token is fake or expired, this throws an error
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      // 3. Find the user this token belongs to
-      //    We attach them to req.user so route handlers can use it
-      //    .select('-password') means: fetch everything EXCEPT the password
-      req.user = await User.findById(decoded.id).select('-password');
-
-      // 4. Pass control to the actual route handler
-      next();
-    } catch (err) {
-      return res.status(401).json({ message: 'Token is invalid or expired' });
-    }
+    return res.status(401).json({ message: 'No token — access denied' });
   }
 
-  if (!token) {
-    return res.status(401).json({ message: 'No token — access denied' });
+  try {
+    // 1. Extract the token (strip "Bearer " prefix)
+    const token = req.headers.authorization.split(' ')[1];
+
+    // 2. Verify the token using our secret key
+    //    If the token is fake or expired, this throws an error
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // 3. Find the user this token belongs to
+    //    We attach them to req.user so route handlers can use it
+    //    .select('-password') means: fetch everything EXCEPT the password
+    req.user = await User.findById(decoded.id).select('-password');
+
+    if (!req.user) {
+      return res.status(401).json({ message: 'User no longer exists' });
+    }
+
+    // 4. Pass control to the actual route handler
+    return next();
+  } catch (err) {
+    return res.status(401).json({ message: 'Token is invalid or expired' });
   }
 };
 
