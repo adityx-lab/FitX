@@ -1361,15 +1361,30 @@ function calculateAngles(kp) {
   if (ls !== null) results.push(`Left shoulder angle: ${ls}°`);
   if (rs !== null) results.push(`Right shoulder angle: ${rs}°`);
 
-  // Body orientation
-  if (kp[5].score > 0.3 && kp[11].score > 0.3) {
+// Robust back lean — midpoint of both shoulders/hips survives partial occlusion
+  if (kp[5].score > 0.3 && kp[6].score > 0.3 && kp[11].score > 0.3 && kp[12].score > 0.3) {
+    const shoulderMid = { x: (kp[5].x + kp[6].x) / 2, y: (kp[5].y + kp[6].y) / 2 };
+    const hipMid      = { x: (kp[11].x + kp[12].x) / 2, y: (kp[11].y + kp[12].y) / 2 };
+    const dx = hipMid.x - shoulderMid.x;
+    const dy = hipMid.y - shoulderMid.y;
+    const backLean = Math.round(Math.abs(Math.atan2(dx, dy) * 180 / Math.PI)); // 0° = upright
+    results.push(`Back lean from vertical: ${backLean}°`);
+  } else if (kp[5].score > 0.3 && kp[11].score > 0.3) {
     const torsoAngle = Math.round(Math.atan2(kp[11].y - kp[5].y, kp[11].x - kp[5].x) * 180 / Math.PI);
-    results.push(`Torso angle from vertical: ${Math.abs(torsoAngle - 90)}°`);
+    results.push(`Back lean from vertical (single-side estimate): ${Math.abs(torsoAngle - 90)}°`);
+  }
+
+  // Averaged hip angle — smooths left/right camera-angle skew
+  if (lh !== null && rh !== null) {
+    results.push(`Average hip angle: ${Math.round((lh + rh) / 2)}°`);
+  }
+
+  // Hip asymmetry flag — large left/right gap usually means uneven form or bad camera angle
+  if (lh !== null && rh !== null && Math.abs(lh - rh) > 15) {
+    results.push(`⚠ Hip angle asymmetry: ${Math.abs(lh - rh)}° difference between left and right — possible uneven form or side-on camera angle`);
   }
 
   return results.length ? results.join('\n') : 'Could not calculate angles (joints not visible)';
-}
-
 // Analyze movement over poseHistory frames
 function detectMovement() {
   if (poseHistory.length < 5) return 'Not enough frames yet to detect movement.';

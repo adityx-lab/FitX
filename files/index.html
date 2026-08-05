@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FitX</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Login
+════════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Your smart fitness companion</div>
+      <h2>Welcome back</h2>
+      <div class="error-msg" id="login-error"></div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@email.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn" onclick="doLogin()" id="login-btn">Log In</button>
+      <div class="auth-switch">
+        New to FitX? <a onclick="go('screen-signup')">Create an account</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: Signup
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-signup">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo">FitX</div>
+      <div class="auth-sub">Start your fitness journey</div>
+      <h2>Create account</h2>
+      <div class="error-msg" id="signup-error"></div>
+      <div class="input-group">
+        <label>Full name</label>
+        <input type="text" id="signup-name" placeholder="Alex Johnson">
+      </div>
+      <div class="input-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="you@email.com">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="signup-pass" placeholder="At least 6 characters">
+      </div>
+      <div class="input-group">
+        <label>Confirm password</label>
+        <input type="password" id="signup-pass2" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <button class="btn" onclick="doSignup()" id="signup-btn">Create Account</button>
+      <div class="auth-switch">
+        Already have an account? <a onclick="go('screen-login')">Log in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     SCREEN: App (Home / Workout / Nutrition / AI / Form / Profile)
+════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-app">
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="app-logo" onclick="showTab('home')">FitX</div>
+    <div class="app-username" id="header-name"></div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
+  </header>
+
+  <!-- ── TAB: Home ──────────────────────────── -->
+  <div class="app-content" id="tab-home">
+    <div class="welcome-banner">
+      <h2 id="home-greeting">Good morning! 👋</h2>
+      <p id="home-goal">Loading your goal…</p>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="num" id="stat-streak">–</div>
+        <div class="lbl">🔥 Streak</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-meals">–</div>
+        <div class="lbl">🍽 Meals today</div>
+      </div>
+      <div class="stat-card">
+        <div class="num" id="stat-exercises">–</div>
+        <div class="lbl">💪 Exercises</div>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <div class="qa-card" onclick="showTab('workout')">
+        <div class="qa-icon">🏋️</div>
+        <div class="qa-label">Workout</div>
+        <div class="qa-sub">Log today's session</div>
+      </div>
+      <div class="qa-card" onclick="showTab('nutrition')">
+        <div class="qa-icon">🥗</div>
+        <div class="qa-label">Nutrition</div>
+        <div class="qa-sub">Track your meals</div>
+      </div>
+      <div class="qa-card" onclick="showTab('coach')">
+        <div class="qa-icon">🤖</div>
+        <div class="qa-label">AI Coach</div>
+        <div class="qa-sub">Get personalized advice</div>
+      </div>
+      <div class="qa-card" onclick="showTab('form')">
+        <div class="qa-icon">📷</div>
+        <div class="qa-label">Form Check</div>
+        <div class="qa-sub">AI posture analysis</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Workout ───────────────────────── -->
+  <div class="app-content" id="tab-workout" style="display:none">
+    <div class="card">
+      <div class="card-title"><span>🏋️</span> My Workout Plan</div>
+      <div class="day-tabs" id="day-tabs"></div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="workout-progress" style="width:0%"></div>
+      </div>
+      <div id="exercise-list"><!-- exercises rendered here --></div>
+      <button class="btn-sm green" onclick="toggleAddForm()" style="margin-top:8px">+ Add Exercise</button>
+      <div class="add-form" id="add-exercise-form">
+        <div class="form-row">
+          <input class="form-input" id="ex-name" placeholder="Exercise name (e.g. Bench Press)">
+        </div>
+        <div class="form-row three">
+          <input class="form-input" id="ex-sets"   type="number" placeholder="Sets" min="1" value="3">
+          <input class="form-input" id="ex-reps"   type="number" placeholder="Reps" min="1" value="10">
+          <input class="form-input" id="ex-weight" type="number" placeholder="kg"   min="0" value="0">
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-sm green" onclick="addExercise()">Add</button>
+          <button class="btn-sm grey"  onclick="toggleAddForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Nutrition ────────────────────── -->
+  <div class="app-content" id="tab-nutrition" style="display:none">
+    <div class="card">
+      <div class="card-title"><span>🥗</span> Today's Nutrition</div>
+      <div class="calorie-ring-wrap">
+        <div class="calorie-ring">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="46" fill="none" stroke="#e0e8e0" stroke-width="10"/>
+            <circle id="calorie-arc" cx="55" cy="55" r="46" fill="none" stroke="#4CAF50" stroke-width="10"
+              stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289"/>
+          </svg>
+          <div class="calorie-ring-text">
+            <span class="cal-num"  id="cal-current">0</span>
+            <span class="cal-goal" id="cal-goal-lbl">/ 2000</span>
+          </div>
+        </div>
+        <div class="macro-bars">
+          <div class="macro-row">
+            <div class="macro-label"><span>Protein</span><span id="m-protein">0g</span></div>
+            <div class="macro-bar"><div class="macro-fill protein" id="mf-protein" style="width:0%"></div></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-label"><span>Carbs</span><span id="m-carbs">0g</span></div>
+            <div class="macro-bar"><div class="macro-fill carbs" id="mf-carbs" style="width:0%"></div></div>
+          </div>
+          <div class="macro-row">
+            <div class="macro-label"><span>Fat</span><span id="m-fat">0g</span></div>
+            <div class="macro-bar"><div class="macro-fill fat" id="mf-fat" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🍽</span> Meals</div>
+      <div id="meal-list"><!-- meals rendered here --></div>
+      <button class="btn-sm green" onclick="toggleMealForm()" style="margin-top:8px">+ Log Meal</button>
+      <div class="add-form" id="add-meal-form">
+        <div class="form-row">
+          <input class="form-input" id="m-name" placeholder="Meal name">
+          <input class="form-input" id="m-cals" type="number" placeholder="Calories">
+        </div>
+        <div class="form-row three">
+          <input class="form-input" id="m-protein" type="number" placeholder="Protein g" min="0" value="0">
+          <input class="form-input" id="m-carbs"   type="number" placeholder="Carbs g"   min="0" value="0">
+          <input class="form-input" id="m-fat"     type="number" placeholder="Fat g"     min="0" value="0">
+        </div>
+        <div class="form-row" style="margin-bottom:10px">
+          <select class="form-input" id="m-type">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+            <option value="snack">Snack</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-sm green" onclick="addMeal()">Log</button>
+          <button class="btn-sm grey"  onclick="toggleMealForm()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: AI Coach ──────────────────────── -->
+  <div class="app-content" id="tab-coach" style="display:none">
+    <div class="card" style="padding:0">
+      <div style="padding:16px 18px; border-bottom:1px solid var(--border)">
+        <div class="card-title" style="margin:0"><span>🤖</span> FitX AI Coach</div>
+      </div>
+      <div style="padding:16px">
+        <div class="chat-wrap">
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-chips" id="chat-chips">
+            <button class="chat-chip" onclick="sendChip(this)">Suggest a workout</button>
+            <button class="chat-chip" onclick="sendChip(this)">How much protein do I need?</button>
+            <button class="chat-chip" onclick="sendChip(this)">Help me lose weight</button>
+            <button class="chat-chip" onclick="sendChip(this)">Best exercises for beginners</button>
+          </div>
+          <div class="chat-input-row">
+            <input class="chat-input" id="chat-input" placeholder="Ask your AI coach…"
+              onkeydown="if(event.key==='Enter')sendMessage()">
+            <button class="chat-send" onclick="sendMessage()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: Form Checker ──────────────────── -->
+  <div class="app-content" id="tab-form" style="display:none">
+    <div class="form-checker-header">
+      <h2>📷 AI Form Checker</h2>
+      <p>Point your camera at yourself — FitX detects your exercise and scores your form fully on-device, no server required.</p>
+    </div>
+
+    <div class="camera-container">
+      <video id="cameraFeed" autoplay playsinline muted></video>
+      <canvas id="poseCanvas"></canvas>
+      <div class="camera-overlay" id="camera-overlay">
+        <div class="cam-icon">📷</div>
+        <p>Camera is off. Press <strong>Start Analysis</strong> to begin.</p>
+      </div>
+    </div>
+
+    <div class="camera-controls">
+      <button class="cam-btn start" id="start-cam-btn" onclick="startCamera()">▶ Start Analysis</button>
+      <button class="cam-btn stop"  id="stop-cam-btn"  onclick="stopCamera()" style="display:none">⏹ Stop</button>
+    </div>
+
+    <!-- Training data collection panel (dev/data-gathering mode) -->
+    <div class="card" id="label-panel">
+      <div class="card-title"><span>🏷️</span> Training Data Collection</div>
+      <div class="form-row">
+        <select class="form-input" id="label-exercise">
+          <option value="Squat">Squat</option>
+          <option value="Lunge">Lunge</option>
+          <option value="Bicep Curl">Bicep Curl</option>
+          <option value="Overhead Press">Overhead Press</option>
+          <option value="Plank">Plank</option>
+        </select>
+        <select class="form-input" id="label-quality">
+          <option value="good">Good form</option>
+          <option value="bad">Bad form</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;align-items:center">
+        <button class="btn-sm green" onclick="toggleLabeling()" id="label-toggle-btn">Start Logging</button>
+        <button class="btn-sm grey" onclick="downloadTrainingCSV()">⬇ Download CSV (<span id="label-count">0</span> rows)</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted);margin-top:8px">Logs one labeled row every 200ms while active and the camera is running. Set exercise + quality before you start each recording, then hit Start Logging right before you perform the rep.</p>
+    </div>
+
+    <!-- Detected exercise badge -->
+    <div id="detected-ex-wrap" style="display:none; margin-bottom:16px">
+      <div class="detected-exercise">
+        <span>🏋️</span>
+        <span id="detected-ex-name">Detecting…</span>
+      </div>
+    </div>
+
+    <!-- Form score ring -->
+    <div class="feedback-panel" id="score-panel" style="display:none">
+      <div class="score-ring-wrap">
+        <div class="score-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="32" fill="none" stroke="#e0e8e0" stroke-width="8"/>
+            <circle id="score-arc" cx="40" cy="40" r="32" fill="none" stroke="#4CAF50" stroke-width="8"
+              stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/>
+          </svg>
+          <div class="score-ring-text">
+            <span class="score-num" id="score-num" style="color:var(--green)">–</span>
+            <span class="score-lbl">Score</span>
+          </div>
+        </div>
+        <div class="score-desc">
+          <h4 id="score-label">Waiting for movement…</h4>
+          <p  id="score-detail">Begin the exercise and FitX will score your form.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live feedback panel -->
+    <div class="feedback-panel">
+      <div class="feedback-header">
+        <div class="feedback-status idle" id="feedback-status"></div>
+        <div class="feedback-title"  id="feedback-title">Waiting for camera…</div>
+      </div>
+      <div class="feedback-body" id="feedback-body">
+        Start the camera to begin real-time form analysis. Stand 1–2 metres back so your full body is visible.
+      </div>
+    </div>
+
+    <!-- Corrections list -->
+    <div class="card" id="corrections-card" style="display:none">
+      <div class="card-title"><span>⚠️</span> Form Corrections</div>
+      <ul class="correction-list" id="corrections-list"></ul>
+    </div>
+
+    <!-- Tips -->
+    <div class="card">
+      <div class="card-title"><span>💡</span> Tips for best results</div>
+      <ul class="correction-list">
+        <li class="correction-item"><span class="ci-icon">📏</span><span>Stand 1–2 metres from the camera so your full body is in frame.</span></li>
+        <li class="correction-item"><span class="ci-icon">💡</span><span>Make sure the room is well lit — avoid bright light behind you.</span></li>
+        <li class="correction-item"><span class="ci-icon">👕</span><span>Wear form-fitting clothes so your joints are clearly visible.</span></li>
+        <li class="correction-item"><span class="ci-icon">📱</span><span>Prop your phone or laptop at body height for a side-on view.</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── TAB: Profile ───────────────────────── -->
+  <div class="app-content" id="tab-profile" style="display:none">
+    <div class="card">
+      <div class="profile-avatar" id="profile-avatar">A</div>
+      <div class="profile-name"  id="profile-name">Loading…</div>
+      <div class="profile-email" id="profile-email"></div>
+      <div class="profile-stat-row">
+        <div class="profile-stat"><div class="ps-num" id="ps-streak">–</div><div class="ps-lbl">🔥 Streak</div></div>
+        <div class="profile-stat"><div class="ps-num" id="ps-meals">–</div><div class="ps-lbl">🍽 Total meals</div></div>
+        <div class="profile-stat"><div class="ps-num" id="ps-exercises">–</div><div class="ps-lbl">💪 Exercises</div></div>
+        <div class="profile-stat"><div class="ps-num" id="ps-goal">–</div><div class="ps-lbl">🎯 Goal</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>🎯</span> Update Goal</div>
+      <input class="form-input" id="goal-input" placeholder="e.g. Build muscle, Lose 5kg…" style="margin-bottom:10px">
+      <button class="btn-sm green" onclick="updateGoal()">Save Goal</button>
+    </div>
+    <div class="card">
+      <div class="card-title"><span>⚠️</span> Danger Zone</div>
+      <button class="btn danger" onclick="deleteAccount()">Delete Account & All Data</button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <nav class="bottom-nav">
+    <button class="nav-btn active" id="nav-home"      onclick="showTab('home')">     <span class="icon">🏠</span>Home</button>
+    <button class="nav-btn"        id="nav-workout"   onclick="showTab('workout')">  <span class="icon">🏋️</span>Workout</button>
+    <button class="nav-btn"        id="nav-nutrition" onclick="showTab('nutrition')"><span class="icon">🥗</span>Nutrition</button>
+    <button class="nav-btn"        id="nav-coach"     onclick="showTab('coach')">    <span class="icon">🤖</span>Coach</button>
+    <button class="nav-btn"        id="nav-form"      onclick="showTab('form')">     <span class="icon">📷</span>Form</button>
+    <button class="nav-btn"        id="nav-profile"   onclick="showTab('profile')">  <span class="icon">👤</span>Profile</button>
+  </nav>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- TensorFlow.js + MoveNet for pose detection -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js"></script>
+
+<!-- App modules — order matters: state/helpers first, feature tabs after -->
+<script src="js/storage.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/home.js"></script>
+<script src="js/workout.js"></script>
+<script src="js/nutrition.js"></script>
+<script src="js/coach.js"></script>
+<script src="js/formChecker.js"></script>
+<script src="js/profile.js"></script>
+
+</body>
+</html>
